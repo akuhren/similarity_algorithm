@@ -1,0 +1,95 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage{array}
+\newcommand{\Lim}[1]{\raisebox{0.5ex}{\scalebox{0.8}{$\displaystyle \lim_{#1}\;$}}}
+\newcommand{\Cfilei}[4]{ \lstinputlisting[firstline=#2,lastline=#3,firstnumber=#2,]{#1}}
+\newcommand{\Cfile}[4]{ \lstinputlisting[firstline=#2,lastline=#3,firstnumber=#2]{#1}}
+\newcommand\diff{\text{diff}}
+\newcommand\erf{\text{erf}}
+\newcommand\X{$\bullet$}
+\newcommand\K{\mathbf{K}}
+\newcommand\T{\text{T}}
+\newcommand\EL{\mathbf{L}}
+
+\begin{document}
+\section{Formatting}
+Input table $T_{in}$ is formatted such that each row corresponds to one test. The first three columns in a row holds the hashes ($h_1, h_2, h_3$) for the audio samples in the test while the fourth column holds an integer $i \in [1,4]$ denoting which of the samples was chosen as the ``odd'' one. The value 4 indicates that the test person could not tell:\\\\
+\begin{tabular}{| c | c | c | c |}
+\hline$h_1$  & $h_2$ & $h_3$ & $i$ \\\hline
+\end{tabular}\\\\
+We create a new, 4-column table, $T_f$, using all rows for which $i \ne 4$. In this table each test results in two rows, signifying the distances we want to compare. The two first columns always hold the non-odd samples while the third and fourth pairs the odd sample up against each of the two others. Renaming the samples $x_{1..3}$ we take the convention that $x_3$ is always the odd one, so each test gives us the following two rows:\\\\
+\begin{tabular}{| c | c | c | c |}
+\hline
+$x_1$  & $x_2$ & $x_1$ & $x_3$ \\\hline
+$x_1$  & $x_2$ & $x_2$ & $x_3$ \\\hline
+\end{tabular}\\\\
+For each row in $T_{format}$ we obtain the distances $d_1$ and $d_2$, which denote the distances between the similar and dissimilar samples, respectively. Hence we want the algorithm to give us distances such that $d_1 < d_2$ whenever possible.
+\section{Cost}
+Having a distance function $d(...)_\theta$, we define the probability of seeing each test result as such:
+$$
+p(? \mid d_1, d_2, \theta) = \Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)
+$$
+Hence, the larger $d_2$ is compared to $d_1$ the greater the chance of observing the test result. The combined probability is then
+$$
+\prod (p(? \mid d_1, d_2, \theta))
+$$
+for which we take the negative natural logarithm:
+\begin{align*}  
+cost
+=& -\log\big(\prod (p(? \mid d_1, d_2, \theta))\big)\\
+=& -\sum\log(p(? \mid d_1, d_2, \theta))
+\end{align*}
+We the want to minimize $cost$, which lies in the interval $[0; \infty]$.
+\section{Gradient}
+Next we consider the gradient for our cost function, 
+\begin{align*}
+\frac{\partial cost}{\partial \K}
+&= \frac{\partial}{\partial \K} -\sum\log(p(? \mid d_1, d_2, \theta))\\
+&= \frac{\partial}{\partial \K} -\sum\log\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)\\
+&= -\frac{\partial}{\partial \K} \sum\log\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)\\
+&= -\sum testgrad\\
+\text{where } testgrad &= \frac{\partial}{\partial \K}\log\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)
+\end{align*}
+Further derivation of $testgrad$ yields:
+\begin{align*}
+testgrad
+&= \frac{\partial}{\partial \K}\log\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)\\
+&= \log'\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)\cdot \frac{\partial}{\partial \K}\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)\\
+&= \frac{1}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)}\cdot \frac{\partial}{\partial \K}\Big(\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big)\\
+&= \frac{1}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)}\cdot \Phi'\Big(\frac{d_2-d_1}{\sigma^2}\Big)\cdot\frac{\partial}{\partial \K}\frac{d_2-d_1}{\sigma^2}\\
+&= \frac{1}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)}\cdot \phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\cdot\frac{\partial}{\partial \K}\frac{d_2-d_1}{\sigma^2}\\
+&= \frac{1}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)}\cdot \phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\frac{1}{{\sigma^2}}\frac{\partial}{\partial \K}(d_2-d_1)\\
+&= \frac{1}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)}\cdot \phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\frac{1}{{\sigma^2}}\Bigg(\frac{\partial d_2}{\partial \K}-\frac{\partial d_1}{\partial \K}\Bigg)
+\end{align*}
+We separately consider the derivate of the distance function for vectors $x_m$ and $x_n$:
+\begin{align*}
+\frac{\partial d}{\partial \K}
+&= \frac{\partial}{\partial \K} (x_m-x_n)^\T \K (x_m-x_n)\\
+&= \frac{\partial}{\partial \K} (x_m-x_n)^\T \EL\EL^\T (x_m-x_n)\\
+&=  (x_m-x_n)^\T \frac{\partial \EL\EL^\T}{\partial \K}(x_m-x_n)\\
+\end{align*}
+We then have to cases.
+\begin{align*}
+\noalign{If $\K$ is diagonal:}
+\frac{\partial \EL\EL^\T}{\partial \K}
+&= \mathbf{I}\\
+\noalign{If $\K$ is dense:}
+\frac{\partial \EL\EL^\T}{\partial \K}
+&= \frac{\partial \EL}{\partial \EL}\EL^\T+\EL\frac{\partial \EL^\T}{\partial \EL}\\
+&= \EL^\T+\EL
+\end{align*}
+
+For $x_1, x_2,$ and $x_3$ we thus have the following combined gradient:
+\begin{align*}
+\noalign{If $\K$ is diagonal:}
+\frac{\partial cost}{\partial \K} =& -\sum \frac{\phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big((x_3-x_1)^\T(x_3-x_1)-(x_2-x_1)^\T(x_2-x_1)\Big)}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\sigma^2}\\
+\noalign{If $\K = \EL\EL^\T$:}
+\frac{\partial cost}{\partial \K} =& -\sum \frac{\phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\Big((x_3-x_1)^\T(\EL^\T+\EL)(x_3-x_1)-(x_2-x_1)^\T(\EL^\T+\EL)(x_2-x_1)\Big)}{\Phi\Big(\frac{d_2-d_1}{\sigma^2}\Big)\sigma^2}
+\end{align*}
+\end{document}
