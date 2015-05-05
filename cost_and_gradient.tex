@@ -1,18 +1,5 @@
 \documentclass[12pt]{article}
 \usepackage{amsmath}
-\usepackage{verbatim}
-\usepackage{listings}
-\usepackage[usenames,dvipsnames]{color}
-\usepackage{xcolor}
-\usepackage{graphicx}
-\usepackage{placeins}
-\usepackage{array}
-\newcommand{\Lim}[1]{\raisebox{0.5ex}{\scalebox{0.8}{$\displaystyle \lim_{#1}\;$}}}
-\newcommand{\Cfilei}[4]{ \lstinputlisting[firstline=#2,lastline=#3,firstnumber=#2,]{#1}}
-\newcommand{\Cfile}[4]{ \lstinputlisting[firstline=#2,lastline=#3,firstnumber=#2]{#1}}
-\newcommand\diff{\text{diff}}
-\newcommand\erf{\text{erf}}
-\newcommand\X{$\bullet$}
 \newcommand\K{\mathbf{K}}
 \newcommand\T{\text{T}}
 \newcommand\EL{\mathbf{L}}
@@ -74,7 +61,7 @@ We separately consider the derivate of the distance function for vectors $x_m$ a
 &= \frac{\partial}{\partial \K} (x_m-x_n)^\T \EL\EL^\T (x_m-x_n)\\
 &=  (x_m-x_n)^\T \frac{\partial \EL\EL^\T}{\partial \K}(x_m-x_n)\\
 \end{align*}
-We then have to cases.
+We then have two cases.
 \begin{align*}
 \noalign{If $\K$ is diagonal:}
 \frac{\partial \EL\EL^\T}{\partial \K}
