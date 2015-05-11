@@ -70,7 +70,7 @@ function res = data_enc(M)
         res(k:(k+1),2) = x2;
         res(k:(k+1),4) = x3;
 
-        res( k,3) = x1;
+        res(k,3) = x1;
         res(k+1,3) = x2;
         k = k+2;
     end 
@@ -79,7 +79,7 @@ end
 
 % set K to identity matrix
 K = eye(length(fs));
-[maxJ, err, index] = checkgrad(@optim, unwrap(K), 1e-6*(1+norm(K)), T_enc);
+[maxJ, err, index] = checkgrad(@optim, unwrap_dia(K), 1e-6*(1+norm(K)), T_enc);
 
 % should be close to zero
 res = err(1)+2*err(2);
@@ -105,9 +105,27 @@ function out = unwrap(in)
     end
 end
 
+% construct a diagonal matrix provided the diagonal values in a vector
+function out = wrap_dia(in)
+    s = length(in);
+    out = zeros(s,s);
+    for i = 1:s
+        out(i,i) = in(i);
+    end
+end
+
+% extract diagonal from matrix
+function out = unwrap_dia(in)
+    s = length(in);
+    out = zeros(1,s);
+    for i = 1:s
+        out(i) = in(i,i);
+    end
+end
+
 % cost- and gradient-function we want to minimize
 function [cost, grad] = optim(unwrapped, data)
-    K = wrap(unwrapped);
+    K = wrap_dia(unwrapped);
     nrows = length(data(:,1));
     
     cost = 0;
@@ -155,9 +173,8 @@ function grad = dist_grad(h1, h2, K)
 end
 
 function dist = d(h1, h2, K)
-   i_arr = arrayfun(@(s) map(char(s)), [h1 h2]);
-   x1 = M_feat(i_arr(1), fs)'; % feature vector 1
-   x2 = M_feat(i_arr(2), fs)'; % feature vector 2
+   x1 = M_feat(map(char(h1)), fs)'; % feature vector 1
+   x2 = M_feat(map(char(h2)), fs)'; % feature vector 2
    
    % For now, replace NaN's with 0
    x1(isnan(x1)) = 0;
